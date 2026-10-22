@@ -21,7 +21,7 @@ test('a ready campaign gives the player scenes, goals and prepared encounters',a
  assert.match(app,/Ochroniarz 2/);
  assert.match(app,/Rozpocznij gotową kampanię/);
  assert.match(app,/action\.hidden=!!stage\?\.complete/);
- assert.match(sw,/red-solo-v23-campaign/);
+ assert.match(sw,/red-solo-v24-simplified-combat/);
  assert.match(sw,/campaigns\.js/);
 });
 
@@ -33,5 +33,20 @@ test('journal owns scrolling and is not moved ahead of combat controls',async()=
  assert.match(app,/box\.scrollTop/);
  assert.match(css,/\.journalPanel \.log\{[^}]*overflow-y:auto/);
  assert.match(css,/#main\{[^}]*overflow:hidden/);
+});
+
+test('combat starts once, NPC turns resolve automatically, and jargon is simplified',async()=>{
+ const app=await read('../public/app.js');
+ assert.match(app,/for\(const id of \['addEnemy','setCombat','enemyAttack','nextTurn'\]\)\$\(id\)\?\.remove\(\)/);
+ assert.match(app,/scheduleCombatFlow\(\)/);
+ assert.match(app,/Teraz działa: \$\{e\.actor\}/);
+ assert.match(app,/strzela do \$\{e\.target\}, ale nie trafia/);
+ assert.match(app,/Rusz o 4 m/);
+ assert.match(app,/Schowaj się za osłoną/);
+ assert.match(app,/Zakończ swoją turę/);
+ assert.match(app,/startCombat'\)\.hidden=started/);
+ assert.match(app,/const fireAndContinue=\(\)=>\{combatFlowTimer=null;baseCombatRun\('NPC'/);
+ assert.match(app,/const canFireAgain=turn\?\.actorId===actor/);
+ assert.match(app,/playerCanAct=playerTurn&&!state\.combat\.turn\.majorUsed/);
 });
 
