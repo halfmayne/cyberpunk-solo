@@ -1,5 +1,6 @@
 import {migrate,beginCombat,nextTurn as combatNext,act as combatAct,currentActor,eventText} from './combat.js';
 import {initialState,reduce,describe,woundState} from './engine.js';
+import {campaigns,campaignById} from './campaigns.js';
 const KEY='cyberpunk-red-solo-state-v3';let state;let busy=false;
 const $=id=>document.getElementById(id);const format=(t)=>new Date(t).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
 function validate(s){if(!s||![1,2,3].includes(s.version)||typeof s.revision!=='number'||!s.player||!Array.isArray(s.enemies)||!s.combat||!Array.isArray(s.journal)||!Array.isArray(s.pendingNarration))throw Error('Nieprawidłowy format zapisu');if(!Number.isInteger(s.player.hp)||s.player.hp<0||s.player.hp>s.player.maxHp||!['head','body'].every(k=>Number.isInteger(s.player.armor[k])&&s.player.armor[k]>=0)||!Number.isInteger(s.player.weapon.ammo)||s.player.weapon.ammo<0||s.player.weapon.ammo>s.player.weapon.magazine||s.journal.length>1000||s.pendingNarration.length>100)throw Error('Uszkodzone wartości stanu');return migrate(s);}
@@ -32,4 +33,33 @@ $('reset').onclick=()=>{if(!confirm('Nieodwracalnie rozpocząć nową kampanię?
 $('healBtn').onclick=()=>{const actor=currentActor(state);if(!actor){entry('error','Rozpocznij walkę, by wykonać test');return;}const patient=state.player;const injuries=patient.injuries.filter(i=>!i.healed);if(!injuries.length){entry('error','Brak ran krytycznych postaci');return;}const info=injuries.map(i=>`${i.id} : ${i.name}`).join('\n');const injuryId=prompt(`Wpisz ID rany postaci do leczenia/łatania:\n${info}`,injuries[0].id);if(!injuryId)return;const type=confirm('OK = leczenie trwałe (4 godziny), Anuluj = łatanie (1 minuta)')?'HEAL':'PATCH';const skill=prompt('Umiejętność: firstAid, paramedic, surgery',type==='PATCH'?'firstAid':'paramedic');if(!skill)return;combatRun(type,()=>combatAct(state,{type,actorId:actor,targetId:'player',injuryId,skill}));$('options').close();};
 $('medicalDay').onclick=()=>{if(!confirm('Minął pełny dzień? Zakończy to tymczasowe łatanie ran.'))return;state.player.medicalDay=(state.player.medicalDay||0)+1;for(const e of state.enemies)e.medicalDay=(e.medicalDay||0)+1;entry('mechanic','Minął dzień. Tymczasowe opatrunki tracą działanie.');render();$('options').close();};
 $('stabilize').onclick=()=>{mechanics('STABILIZE');$('options').close();};$('rest').onclick=()=>{if(confirm('Czy postać została wcześniej ustabilizowana i odpoczywała pełną dobę?'))mechanics('REST_DAY',{confirmed:true});$('options').close();};
-window.addEventListener('online',()=>{render();narrate();});window.addEventListener('offline',render);document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();narrate();}});if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));render();narrate();
+function createCampaignUI(){
+ const campaignStyles=document.createElement('link');campaignStyles.rel='stylesheet';campaignStyles.href='/campaign.css';document.head.append(campaignStyles);
+ const card=document.createElement('section');card.className='missionCard';card.innerHTML='<div class="missionKicker">GOTOWA KAMPANIA • BEZ PRZYGOTOWAŃ</div><h2 id="missionTitle"></h2><p id="missionObjective"></p><button id="missionAction" class="primary"></button><small id="missionHint" class="missionHint"></small>';
+ $('combatPanel').prepend(card);
+ const dialog=document.createElement('dialog');dialog.id='campaignDialog';dialog.innerHTML='<div class="modalTitle"><h2>NOWA GRA</h2><button class="iconButton" id="closeCampaign" aria-label="Zamknij">✕</button></div><article class="campaignChoice"><small>GOTOWA KAMPANIA • OK. 20–30 MIN</small><h3>Dług w Kabuki</h3><p>Odzyskaj skradziony pakiet danych. Gotowe sceny, przygotowani przeciwnicy i jasny cel w każdej chwili.</p><button id="startCampaign" class="primary">Rozpocznij grę</button></article><p class="tiny">Nie musisz tworzyć postaci ani wymyślać przeciwników. Gra zapisuje się automatycznie.</p>';
+ document.body.append(dialog);$('closeCampaign').onclick=()=>dialog.close();
+ $('startCampaign').onclick=()=>{if(state.revision>0&&!confirm('Rozpocząć nową grę? Bieżący zapis zostanie zastąpiony. Wcześniej możesz go wyeksportować w Opcjach.'))return;startCampaign(campaigns[0]);dialog.close();};
+ $('missionAction').onclick=advanceCampaign;
+ $('reset').onclick=()=>dialog.showModal();
+ $('campaignActionBtn')?.addEventListener('click',()=>dialog.showModal());
+ const optionsButton=document.createElement('button');optionsButton.id='campaignActionBtn';optionsButton.type='button';optionsButton.textContent='Nowa gra • gotowa kampania';optionsButton.onclick=()=>dialog.showModal();$('options').querySelector('.modalGrid').prepend(optionsButton);
+ return {card,dialog};
+}
+function startCampaign(definition){
+ state=migrate(initialState());const first=definition.stages[0];state.player.name=definition.playerName;state.campaign={...state.campaign,id:definition.id,stage:0,title:definition.title,location:definition.location,scene:first.scene,turn:1};
+ state.enemies[0].name='Strażnik magazynu';state.enemies[0].hp=state.enemies[0].maxHp=20;state.combat.targetId=state.enemies[0].id;state.journal=[];save();entry('system',`Przyjęto zlecenie: ${definition.title}. ${first.objective}`);render();
+}
+function advanceCampaign(){
+ const def=campaignById(state.campaign.id);if(!state.campaign.id){campaignUI.dialog.showModal();return;}const stage=def.stages[state.campaign.stage];if(stage?.requiresClear&&state.enemies.some(enemy=>!enemy.dead&&enemy.hp>0)){entry('system','Najpierw oczyść drogę z przeciwników.');return;}
+ if(state.campaign.stage===1){const template=initialState().enemies[0];state.enemies=[0,1].map((_,i)=>({...structuredClone(template),id:`kabuki-${i+1}`,name:i?'Ochroniarz 2':'Ochroniarz 1',dead:false}));state.combat.targetId=state.enemies[0].id;state.combat.active=false;state.combat.order=[];state.combat.turn=null;state.combat.index=0;state.combat.round=0;state.combat.distance=12;}
+ state.campaign.stage=Math.min(state.campaign.stage+1,def.stages.length-1);const next=def.stages[state.campaign.stage];state.campaign.title=next.title;state.campaign.scene=next.scene;state.campaign.turn++;save();entry('system',next.objective);render();
+}
+function renderCampaign(){
+ const def=state.campaign.id?campaignById(state.campaign.id):null;const stage=def?.stages[state.campaign.stage];$('missionTitle').textContent=stage?.title||'Chcesz po prostu zacząć grać?';$('missionObjective').textContent=stage?.objective||'Wybierz gotową misję. Postać, sceny i przeciwnicy będą już przygotowani.';
+ const action=$('missionAction'),hint=$('missionHint');action.hidden=!def||!!stage?.complete;action.textContent=stage?.action||'';const blocked=!!stage?.requiresClear&&state.enemies.some(enemy=>!enemy.dead&&enemy.hp>0);action.disabled=blocked;hint.textContent=blocked?'Najpierw pokonaj przeciwników, a ten przycisk odblokuje kolejny etap.':stage?.complete?'':def?'': 'Jedna misja jest już gotowa. Kolejne dodamy później.';
+ if(stage?.complete){action.hidden=false;action.textContent='Rozpocznij nową grę';action.disabled=false;action.onclick=()=>campaignUI.dialog.showModal();}else action.onclick=advanceCampaign;
+}
+const campaignUI=createCampaignUI();const baseRender=render;render=()=>{baseRender();renderCampaign();};render();narrate();
+if(!localStorage.getItem(KEY)&&!localStorage.getItem('cyberpunk-red-solo-state-v2')&&!localStorage.getItem('cyberpunk-red-solo-state-v1'))startCampaign(campaigns[0]);
+
