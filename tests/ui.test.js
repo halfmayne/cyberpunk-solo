@@ -46,6 +46,7 @@ test('combat starts once, NPC turns resolve automatically, and jargon is simplif
  assert.match(app,/Zakończ swoją turę/);
  assert.match(app,/startCombat'\)\.hidden=started/);
  assert.match(app,/const fireAndContinue=\(\)=>\{combatFlowTimer=null;baseCombatRun\('NPC'/);
+ assert.match(app,/const currentEnemy=state\.enemies\.find\(item=>item\.id===actor\)/);
  assert.match(app,/const canFireAgain=turn\?\.actorId===actor/);
  assert.match(app,/playerCanAct=playerTurn&&!state\.combat\.turn\.majorUsed/);
 });
