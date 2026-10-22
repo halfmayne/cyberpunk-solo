@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {initialState} from '../public/engine.js';import {migrate,beginCombat,nextTurn,act,survival} from '../public/combat.js';
+const rand=n=>()=>n;
+test('migrates v1 state without losing health',()=>{const s=initialState();s.player.hp=12;const t=migrate(s);assert.equal(t.version,3);assert.equal(t.player.hp,12);assert.equal(t.enemies[0].weapon.ammo,8);});
+test('initiative builds order and begins first turn',()=>{const r=beginCombat(initialState(),rand(.5));assert.equal(r.state.combat.order.length,2);assert.ok(r.state.combat.turn);assert.equal(r.state.combat.round,1);});
+test('two attacks exhaust action, then turn advances',()=>{let s=beginCombat(initialState(),rand(.5)).state;while(s.combat.turn.actorId!=='player')s=nextTurn(s,rand(.5)).state;s=act(s,{type:'ATTACK',targetId:'enemy-1'},rand(.5)).state;s=act(s,{type:'ATTACK',targetId:'enemy-1'},rand(.5)).state;assert.equal(s.player.weapon.ammo,6);assert.throws(()=>act(s,{type:'ATTACK'},rand(.5)),/Akcja|LA/);});
+test('move limit enforced',()=>{let s=beginCombat(initialState(),rand(.5)).state;while(s.combat.turn.actorId!=='player')s=nextTurn(s,rand(.5)).state;assert.throws(()=>act(s,{type:'MOVE',meters:13}),/Limit/);s=act(s,{type:'MOVE',meters:6}).state;assert.equal(s.combat.turn.moveSpent,6);});
+test('survival fails on natural 10',()=>{const a=migrate(initialState()).player;a.hp=0;const r=survival(a,rand(.99));assert.equal(r.success,false);assert.equal(a.dead,true);});
+test('cover protects target on hit',()=>{let s=beginCombat(initialState(),rand(.5)).state;while(s.combat.turn.actorId!=='player')s=nextTurn(s,rand(.5)).state;s.enemies[0].cover={hp:20,maxHp:20};const r=act(s,{type:'ATTACK',targetId:'enemy-1'},rand(.9));assert.equal(r.state.enemies[0].hp,20);assert.equal(r.events[0].cover.before,20);});

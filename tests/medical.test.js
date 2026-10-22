@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {initialState,applyDamage} from '../public/engine.js';
+import {migrate,beginCombat,nextTurn,act,activeInjuries,medicalCheck,survival} from '../public/combat.js';
+const r=n=>()=>n;
+const turnPlayer=()=>{let s=beginCombat(initialState(),r(.5)).state;while(s.combat.turn.actorId!=='player')s=nextTurn(s,r(.5)).state;return s;};
+test('critical injury provides rule identifier and maintains roll',()=>{const p=initialState().player;const x=applyDamage(p,{dice:[6,6,1],total:13,critical:true},'body',r(0));assert.equal(x.details.injury.number,2);assert.ok(x.target.injuries[0].id);});
+test('patch first aid permanently removes foreign object injury',()=>{let s=turnPlayer();s.player.injuries=[{id:'test7',number:7,name:'Ciało obce'}];const o=act(s,{type:'PATCH',injuryId:'test7',skill:'firstAid'},r(.9));assert.equal(o.events[0].success,true);assert.equal(o.state.player.injuries[0].healed,true);});
+test('surgery requires medtech',()=>{let s=turnPlayer();s.player.injuries=[{id:'test2',number:2,name:'Urwana ręka'}];assert.throws(()=>act(s,{type:'HEAL',injuryId:'test2',skill:'surgery',targetId:'enemy-1'},r(.9)),/Nie znaleziono|Nie można/);assert.throws(()=>medicalCheck(s.player,'surgery',17,r(.9)),/Medyka/);});
+test('temporary patch suppresses penalty, day restores it',()=>{let s=turnPlayer();s.player.skills.paramedic=6;s.player.injuries=[{id:'test4',number:4,name:'Zapadnięte płuco'}];s=act(s,{type:'PATCH',injuryId:'test4',skill:'paramedic'},r(.9)).state;assert.equal(activeInjuries(s.player).length,0);s.player.medicalDay=1;assert.equal(activeInjuries(s.player).length,1);});
+test('survival penalty includes unpatched critical wound',()=>{const s=migrate(initialState());s.player.hp=0;s.player.injuries=[{number:4,name:'Zapadnięte płuco'}];const result=survival(s.player,r(.1));assert.equal(result.threshold,5);});
