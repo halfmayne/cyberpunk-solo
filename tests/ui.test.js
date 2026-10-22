@@ -12,6 +12,17 @@ test('combat controls and journal use separate workspace panels',async()=>{
  assert.ok(html.indexOf('id="combatPanel"')<html.indexOf('id="journalPanel"'));
 });
 
+test('a ready campaign gives the player scenes, goals and prepared encounters',async()=>{
+ const [campaigns,app,sw]=await Promise.all([read('../public/campaigns.js'),read('../public/app.js'),read('../public/sw.js')]);
+ assert.match(campaigns,/Dług w Kabuki/);
+ assert.match(campaigns,/Pokonaj strażnika/);
+ assert.match(app,/Rozpocznij grę/);
+ assert.match(app,/Ochroniarz 1/);
+ assert.match(app,/Ochroniarz 2/);
+ assert.match(sw,/red-solo-v23-campaign/);
+ assert.match(sw,/campaigns\.js/);
+});
+
 test('journal owns scrolling and is not moved ahead of combat controls',async()=>{
  const [app,css]=await Promise.all([read('../public/app.js'),read('../public/style.css')]);
  assert.doesNotMatch(app,/mainPanel\.prepend/);
@@ -21,3 +32,4 @@ test('journal owns scrolling and is not moved ahead of combat controls',async()=
  assert.match(css,/\.journalPanel \.log\{[^}]*overflow-y:auto/);
  assert.match(css,/#main\{[^}]*overflow:hidden/);
 });
+
