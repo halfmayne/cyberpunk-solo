@@ -127,7 +127,7 @@ function scheduleCombatFlow(){
  combatFlowTimer=setTimeout(()=>{
   combatFlowTimer=null;const actor=currentActor(state),enemy=state.enemies.find(e=>e.id===actor);if(!enemy){combatFlowBusy=true;baseCombatRun('NEXT',()=>combatNext(state));combatFlowBusy=false;scheduleCombatFlow();return;}
   combatFlowBusy=true;entry('system',`${enemy.name} wykonuje swoją turę.`);
-  const fireAndContinue=()=>{combatFlowTimer=null;baseCombatRun('NPC',()=>combatAct(state,{type:'ATTACK',actorId:actor,targetId:'player'}));const turn=state.combat.turn;const canFireAgain=turn?.actorId===actor&&!turn.majorUsed&&turn.attackCount<(enemy.weapon.rateOfFire||1)&&enemy.weapon.ammo>0&&state.player.hp>0;
+  const fireAndContinue=()=>{combatFlowTimer=null;baseCombatRun('NPC',()=>combatAct(state,{type:'ATTACK',actorId:actor,targetId:'player'}));const turn=state.combat.turn;const currentEnemy=state.enemies.find(item=>item.id===actor);const canFireAgain=turn?.actorId===actor&&!turn.majorUsed&&turn.attackCount<(currentEnemy?.weapon.rateOfFire||1)&&currentEnemy?.weapon.ammo>0&&state.player.hp>0;
    combatFlowTimer=setTimeout(()=>{combatFlowTimer=null;if(canFireAgain)fireAndContinue();else{if(state.combat.active&&state.combat.turn)baseCombatRun('NEXT',()=>combatNext(state));combatFlowBusy=false;finishEncounterIfClear();scheduleCombatFlow();}},550);
   };
   combatFlowTimer=setTimeout(fireAndContinue,500);
