@@ -15,6 +15,8 @@ test('combat controls and journal use separate workspace panels',async()=>{
 test('journal owns scrolling and is not moved ahead of combat controls',async()=>{
  const [app,css]=await Promise.all([read('../public/app.js'),read('../public/style.css')]);
  assert.doesNotMatch(app,/mainPanel\.prepend/);
+ assert.doesNotMatch(app,/\$\('medkit'\)\.onclick/);
+ assert.match(app,/btn\.dataset\.go==='medkit'\)playerAct\('STABILIZE'\)/);
  assert.match(app,/box\.scrollTop/);
  assert.match(css,/\.journalPanel \.log\{[^}]*overflow-y:auto/);
  assert.match(css,/#main\{[^}]*overflow:hidden/);
