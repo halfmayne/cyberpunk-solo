@@ -19,6 +19,8 @@ test('a ready campaign gives the player scenes, goals and prepared encounters',a
  assert.match(app,/Rozpocznij grę/);
  assert.match(app,/Ochroniarz 1/);
  assert.match(app,/Ochroniarz 2/);
+ assert.match(app,/Rozpocznij gotową kampanię/);
+ assert.match(app,/action\.hidden=!!stage\?\.complete/);
  assert.match(sw,/red-solo-v23-campaign/);
  assert.match(sw,/campaigns\.js/);
 });
