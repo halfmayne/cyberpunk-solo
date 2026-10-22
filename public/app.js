@@ -57,7 +57,7 @@ function advanceCampaign(){
 }
 function renderCampaign(){
  const def=state.campaign.id?campaignById(state.campaign.id):null;const stage=def?.stages[state.campaign.stage];$('missionTitle').textContent=stage?.title||'Chcesz po prostu zacząć grać?';$('missionObjective').textContent=stage?.objective||'Wybierz gotową misję. Postać, sceny i przeciwnicy będą już przygotowani.';
- const action=$('missionAction'),hint=$('missionHint');action.hidden=!def||!!stage?.complete;action.textContent=stage?.action||'';const blocked=!!stage?.requiresClear&&state.enemies.some(enemy=>!enemy.dead&&enemy.hp>0);action.disabled=blocked;hint.textContent=blocked?'Najpierw pokonaj przeciwników, a ten przycisk odblokuje kolejny etap.':stage?.complete?'':def?'': 'Jedna misja jest już gotowa. Kolejne dodamy później.';
+ const action=$('missionAction'),hint=$('missionHint');action.hidden=!!stage?.complete;action.textContent=stage?.action||(def?'':'Rozpocznij gotową kampanię');const blocked=!!stage?.requiresClear&&state.enemies.some(enemy=>!enemy.dead&&enemy.hp>0);action.disabled=blocked;hint.textContent=blocked?'Najpierw pokonaj przeciwników, a ten przycisk odblokuje kolejny etap.':stage?.complete?'':def?'':'Jedna misja jest już gotowa. Kolejne dodamy później.';
  if(stage?.complete){action.hidden=false;action.textContent='Rozpocznij nową grę';action.disabled=false;action.onclick=()=>campaignUI.dialog.showModal();}else action.onclick=advanceCampaign;
 }
 const campaignUI=createCampaignUI();const baseRender=render;render=()=>{baseRender();renderCampaign();};render();narrate();
