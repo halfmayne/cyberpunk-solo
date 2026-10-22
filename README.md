@@ -104,3 +104,12 @@ Wdrożono tabelę 11 typów ran 2k6 ze stron 22–23 przekazanego podręcznika, 
 - Dla Zapadniętego płuca, Złamanej nogi i Odciętej nogi działają modyfikatory Ruchu i progu przeżywalności; dla Złamanych żeber i Ciała obcego działa kara za długi ruch. Pozostałe skutki mają częściowe pokrycie, nie jest to jeszcze pełna implementacja Easy Mode.
 - Sam proces upływu dnia jest ręcznie potwierdzany, nie ma automatycznego zegara kampanii.
 - Po migracji zapis postaci v1/v2 jest dostępny przez poprzednie klucze localStorage. Zaleca się eksport JSON przed aktualizacją.
+
+
+## v2.2 — UX iPhone
+- Stały, kompaktowy HUD, najnowsze zdarzenie i dolne 4 akcje. Historia zajmuje przewijalny środkowy panel.
+- Rzadziej używane opcje przeniesione do menu „Więcej”; dystans i wybór przeciwnika pozostają w przewijanym panelu pod dziennikiem.
+- Meta viewport ogranicza pinch zoom w Safari/PWA, gdy platforma respektuje ustawienie; systemowe gesty dostępności iOS pozostają poza kontrolą strony. Alternatywa: ustawienie rozmiaru tekstu w Opcjach.
+- Ten sam klucz localStorage i format stanu, bez usuwania zapisanych kampanii. Eksport JSON zalecany przed każdą aktualizacją.
+- Po wdrożeniu nowej wersji zamknij i ponownie uruchom PWA; service worker ma zmieniony cache na red-solo-v22-ui2.
+- Widoki „Walka” i „Dziennik” są rozdzielone. Dziennik ma stałą wysokość i własny pasek przewijania, więc kolejne wpisy nie przesuwają ani nie zasłaniają sterowania walką.
